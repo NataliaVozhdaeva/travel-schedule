@@ -5,7 +5,8 @@ const timeAB = document.querySelector('.timeAB');
 const timeBA = document.querySelector('.timeBA');
 const returnTime = document.querySelector('.return-time');
 let result = document.querySelector('.result');
-
+let departureHours;
+let arrivedHours;
 let currentPrice;
 let currentTime;
 
@@ -13,14 +14,48 @@ const priceOneWay = 700;
 const priceReturn = 1200;
 const timeOneWay = 50; //minute
 const timeReturn = timeOneWay * 2; //minute
+const usersTimeZone = (new Date().getTimezoneOffset() / 60) * -1;
 
-const humanizeTimeDuration = (duration) => {
-  const hours =
-    Math.trunc(duration / 60) > 0 ? Math.trunc(duration / 60) + 'ч' : '';
-  const minutes = duration % 60;
+const currentTimeFromAtoB = [
+  new Date(2022, 10, 01, 18, 00),
+  new Date(2022, 10, 01, 18, 30),
+  new Date(2022, 10, 01, 18, 45),
+  new Date(2022, 10, 01, 19, 00),
+  new Date(2022, 10, 01, 19, 15),
+  new Date(2022, 10, 01, 21, 00),
+];
 
-  return `${hours} ${minutes}`;
-};
+const currentTimeFromBtoA = [
+  new Date(2022, 10, 01, 18, 30),
+  new Date(2022, 10, 01, 18, 45),
+  new Date(2022, 10, 01, 19, 00),
+  new Date(2022, 10, 01, 19, 15),
+  new Date(2022, 10, 01, 19, 35),
+  new Date(2022, 10, 01, 21, 50),
+  new Date(2022, 10, 01, 21, 55),
+];
+
+function setActualTime(array, direction) {
+  let options = array;
+  for (let i = 0; i < options.length; i++) {
+    let sceduleTime = direction[i].toLocaleTimeString().slice(0, 5);
+    let arrayFromTime = splitTime(sceduleTime, ':');
+    let usersHours;
+    if (arrayFromTime[0] - 2 + usersTimeZone >= 24) {
+      let usersHoursWIP = arrayFromTime[0] - 2 + usersTimeZone - 24;
+      usersHours = usersHoursWIP.toString().padStart(2, '0');
+    } else {
+      usersHours = arrayFromTime[0] - 2 + usersTimeZone;
+    }
+
+    let usersTime = usersHours + ':' + arrayFromTime[1];
+
+    options[i].textContent = usersTime;
+  }
+}
+
+setActualTime(timeAB.querySelectorAll('option'), currentTimeFromAtoB);
+setActualTime(timeBA.querySelectorAll('option'), currentTimeFromBtoA);
 
 route.addEventListener('change', () => {
   route.options[route.selectedIndex].value !== 'из A в B и обратно в А'
@@ -35,7 +70,9 @@ route.addEventListener('change', () => {
   }
 });
 
-timeAB.addEventListener('change', blockNotavailableSlots);
+timeAB.addEventListener('change', () => {
+  blockNotavailableSlots();
+});
 
 function splitTime(time, separator) {
   const arrayFromTime = time.split(separator);
@@ -44,9 +81,10 @@ function splitTime(time, separator) {
 
 function getDepartureTime(startTime) {
   let arrayFromTime = splitTime(startTime, ':');
-  let departureHours = Number(arrayFromTime[0]);
+  departureHours = Number(arrayFromTime[0]);
   let departureMinutes = Number(arrayFromTime[1]);
   let departure = departureHours * 60 + departureMinutes;
+
   return departure;
 }
 
@@ -83,6 +121,7 @@ function blockNotavailableSlots() {
 
   for (let option of options) {
     let departureToA = getDepartureTime(option.text);
+
     if (arriveTime > departureToA) {
       option.setAttribute('disabled', true);
     } else {
@@ -90,6 +129,14 @@ function blockNotavailableSlots() {
     }
   }
 }
+
+const humanizeTimeDuration = (duration) => {
+  const hours =
+    Math.trunc(duration / 60) > 0 ? Math.trunc(duration / 60) + 'ч' : '';
+  const minutes = duration % 60;
+
+  return `${hours} ${minutes}`;
+};
 
 button.onclick = function () {
   const tiketsAmount = document.querySelector('#num').value;
